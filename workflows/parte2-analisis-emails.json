@@ -1,0 +1,348 @@
+{
+  "name": "Parte 2: Análisis Web y Envío de Emails Personalizados",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Ejecutar Diariamente",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 400],
+      "notes": "Se ejecuta automáticamente cada 24 horas"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_SPREADSHEET_ID_AQUI",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Negocios Prospectados",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "leer-google-sheets",
+      "name": "Leer Negocios de Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [450, 400],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CONFIGURAR_EN_N8N",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.estado }}",
+              "operation": "equals",
+              "value2": "Pendiente"
+            },
+            {
+              "value1": "={{ $json.email }}",
+              "operation": "notEqual",
+              "value2": "No encontrado"
+            }
+          ]
+        }
+      },
+      "id": "filtrar-pendientes",
+      "name": "Filtrar Solo Pendientes con Email",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 400],
+      "notes": "Solo procesa negocios que están pendientes y tienen email"
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "id": "split-in-batches",
+      "name": "Procesar en Lotes de 5",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [850, 300],
+      "notes": "Evita hacer demasiadas peticiones a la vez"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.website }}",
+        "options": {
+          "timeout": 15000,
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "scrape-website-completo",
+      "name": "Obtener Contenido del Website",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraer texto relevante del HTML\nconst html = $input.item.json.body || '';\n\n// Limpiar HTML y extraer texto\nlet text = html\n  .replace(/<script[^>]*>([\\s\\S]*?)<\\/script>/gi, '')\n  .replace(/<style[^>]*>([\\s\\S]*?)<\\/style>/gi, '')\n  .replace(/<[^>]+>/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim();\n\n// Limitar a 3000 caracteres para no saturar ChatGPT\ntext = text.substring(0, 3000);\n\nconst negocioData = $('Procesar en Lotes de 5').item.json;\n\nreturn [{\n  json: {\n    nombre_negocio: negocioData.nombre,\n    email_negocio: negocioData.email,\n    website: negocioData.website,\n    contenido_web: text,\n    rating: negocioData.rating,\n    row_number: negocioData.row_number || negocioData.rowNumber\n  }\n}];"
+      },
+      "id": "extraer-contenido",
+      "name": "Extraer y Limpiar Contenido",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "model": {
+          "__rl": true,
+          "value": "gpt-4",
+          "mode": "list"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Eres un experto en marketing digital especializado en moda y pequeñas marcas.\n\nTu tarea es redactar un email personalizado y profesional para el siguiente negocio:\n\nNOMBRE: {{ $json.nombre_negocio }}\nWEBSITE: {{ $json.website }}\nRATING: {{ $json.rating }}/5\n\nCONTENIDO DE SU WEB:\n{{ $json.contenido_web }}\n\nREDACTA UN EMAIL que:\n1. Sea personalizado basándote en lo que hace el negocio (según su web)\n2. Menciona algo específico que hayas notado de su negocio\n3. Presenta brevemente nuestros servicios de marketing digital especializado en marcas de moda\n4. Explica cómo podemos ayudarles a crecer\n5. Termina con un call-to-action suave (sin presionar)\n6. Máximo 200 palabras\n7. Tono profesional pero cercano\n8. NO uses emojis\n\nAsunto del email: [Crea un asunto atractivo y personalizado]\n\nFormato de respuesta:\nASUNTO: [el asunto aquí]\n\nCUERPO:\n[el cuerpo del email aquí]"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.8
+        }
+      },
+      "id": "chatgpt-personalizar",
+      "name": "ChatGPT - Generar Email Personalizado",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [1450, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "CONFIGURAR_EN_N8N",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parsear la respuesta de ChatGPT\nconst response = $input.item.json.message?.content || $input.item.json.text || '';\n\nconst asuntoMatch = response.match(/ASUNTO:\\s*(.+?)\\n/i);\nconst cuerpoMatch = response.match(/CUERPO:\\s*([\\s\\S]+)/i);\n\nconst asunto = asuntoMatch ? asuntoMatch[1].trim() : 'Colaboración en Marketing Digital';\nconst cuerpo = cuerpoMatch ? cuerpoMatch[1].trim() : response;\n\nconst previousData = $('Extraer y Limpiar Contenido').item.json;\n\nreturn [{\n  json: {\n    email_destino: previousData.email_negocio,\n    nombre_negocio: previousData.nombre_negocio,\n    asunto: asunto,\n    cuerpo: cuerpo,\n    row_number: previousData.row_number\n  }\n}];"
+      },
+      "id": "procesar-email",
+      "name": "Procesar Email Generado",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email_destino }}",
+        "subject": "={{ $json.asunto }}",
+        "message": "={{ $json.cuerpo }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "enviar-gmail",
+      "name": "Enviar Email por Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [1850, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "CONFIGURAR_EN_N8N",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_SPREADSHEET_ID_AQUI",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Negocios Prospectados",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "estado": "Email Enviado",
+            "fecha_email": "={{ $now.toFormat('yyyy-MM-dd HH:mm') }}",
+            "asunto_enviado": "={{ $('Procesar Email Generado').item.json.asunto }}"
+          }
+        },
+        "options": {
+          "dataLocationOnSheets": "={{ $json.row_number }}"
+        }
+      },
+      "id": "actualizar-estado",
+      "name": "Actualizar Estado en Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [2050, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CONFIGURAR_EN_N8N",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "id": "wait-between-sends",
+      "name": "Esperar 5 seg entre envíos",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [2250, 300],
+      "notes": "Evita ser marcado como spam"
+    }
+  ],
+  "connections": {
+    "Ejecutar Diariamente": {
+      "main": [
+        [
+          {
+            "node": "Leer Negocios de Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Negocios de Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Filtrar Solo Pendientes con Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar Solo Pendientes con Email": {
+      "main": [
+        [
+          {
+            "node": "Procesar en Lotes de 5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar en Lotes de 5": {
+      "main": [
+        [
+          {
+            "node": "Obtener Contenido del Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Contenido del Website": {
+      "main": [
+        [
+          {
+            "node": "Extraer y Limpiar Contenido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer y Limpiar Contenido": {
+      "main": [
+        [
+          {
+            "node": "ChatGPT - Generar Email Personalizado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ChatGPT - Generar Email Personalizado": {
+      "main": [
+        [
+          {
+            "node": "Procesar Email Generado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar Email Generado": {
+      "main": [
+        [
+          {
+            "node": "Enviar Email por Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Email Gmail": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Estado en Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar Estado en Sheets": {
+      "main": [
+        [
+          {
+            "node": "Esperar 5 seg entre envíos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar 5 seg entre envíos": {
+      "main": [
+        [
+          {
+            "node": "Procesar en Lotes de 5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

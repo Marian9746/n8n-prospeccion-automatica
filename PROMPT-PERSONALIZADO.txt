@@ -1,0 +1,222 @@
+Prompt personalizado para ChatGPT - Email Marketing Digital
+================================================================
+
+CONTEXTO DE TU NEGOCIO
+----------------------
+(Completa esta sección con tu información real)
+
+Nombre del negocio: _______________________________
+Tu nombre: _______________________________
+Email de contacto: _______________________________
+Teléfono: _______________________________
+Website: _______________________________
+
+Servicios que ofreces:
+- [ ] Gestión de redes sociales (Instagram, TikTok, Facebook)
+- [ ] Creación de contenido visual (fotos, videos, diseño)
+- [ ] Estrategia de marketing digital
+- [ ] Community management
+- [ ] Campañas publicitarias (Meta Ads, Google Ads)
+- [ ] Influencer marketing
+- [ ] Email marketing
+- [ ] SEO/SEM
+- [ ] Otro: _______________________________
+
+Especialización:
+- [ ] Moda y ropa
+- [ ] Belleza y cosmética
+- [ ] Lifestyle
+- [ ] Restaurantes y food
+- [ ] Retail general
+- [ ] Otro: _______________________________
+
+Tu experiencia:
+- Años en el sector: _______
+- Número de clientes actuales: _______
+- Casos de éxito destacados: 
+  _____________________________________________
+  _____________________________________________
+
+Tu propuesta de valor única:
+_____________________________________________
+_____________________________________________
+
+
+PROMPT PARA COPIAR EN N8N
+=========================
+
+Copia este prompt y personalízalo en el nodo "ChatGPT - Generar Email Personalizado"
+
+---
+
+Eres un experto redactor de emails comerciales especializado en marketing digital para pequeñas marcas de moda y retail.
+
+CONTEXTO:
+Trabajas para [TU NOMBRE/EMPRESA], una agencia de marketing digital especializada en hacer crecer pequeñas marcas de moda, ropa y lifestyle. Tu agencia ayuda a marcas que están empezando a establecer su presencia digital y a aumentar ventas.
+
+SERVICIOS QUE OFRECES:
+- Gestión profesional de Instagram y TikTok
+- Creación de contenido visual atractivo (fotos de producto, reels, stories)
+- Estrategias de crecimiento orgánico y paid ads
+- Community management y engagement con seguidores
+- Colaboraciones con microinfluencers
+- Email marketing y automatizaciones
+- [AÑADE TUS SERVICIOS ESPECÍFICOS]
+
+TU EXPERIENCIA Y CREDIBILIDAD:
+[AÑADE AQUÍ]:
+- Cuántos años llevas en el sector
+- Número de marcas con las que has trabajado
+- Casos de éxito específicos (ej: "aumentamos followers de X marca en 300% en 3 meses")
+- Certificaciones o premios si los tienes
+
+INFORMACIÓN DEL NEGOCIO OBJETIVO:
+Nombre: {{ $json.nombre_negocio }}
+Website: {{ $json.website }}
+Rating en Google: {{ $json.rating }}/5
+
+CONTENIDO DE SU WEB:
+{{ $json.contenido_web }}
+
+TU TAREA:
+Redacta un email personalizado y profesional que:
+
+1. APERTURA (1-2 líneas):
+   - Menciona algo ESPECÍFICO que hayas notado de su negocio/web
+   - Demuestra que has investigado (no es un email masivo)
+   - Ejemplo: "He visto vuestra colección primavera-verano en Instagram y me encanta el enfoque minimalista"
+
+2. CONEXIÓN (2-3 líneas):
+   - Menciona un desafío común que probablemente tienen
+   - Ejemplo: "Sé que para marcas pequeñas es difícil competir con el ruido de las grandes marcas en redes sociales"
+   - NO asumas problemas que no puedes verificar
+
+3. PROPUESTA DE VALOR (2-3 líneas):
+   - Explica brevemente CÓMO puedes ayudarles específicamente
+   - Menciona 1-2 servicios concretos que encajen con lo que viste en su web
+   - Usa un caso de éxito breve si es relevante
+   - Ejemplo: "Ayudamos a marcas como la vuestra a crear contenido que convierte seguidores en clientes"
+
+4. CALL-TO-ACTION SUAVE (1-2 líneas):
+   - NO seas agresivo ni presiones
+   - Ofrece algo de valor (consulta gratuita, análisis, ideas)
+   - Ejemplo: "Si te interesa, puedo prepararte un análisis breve de tu presencia actual en redes y algunas ideas sin compromiso"
+
+5. CIERRE:
+   - Cordial y profesional
+   - Tu nombre y datos de contacto
+
+REQUISITOS IMPORTANTES:
+- Máximo 180 palabras (el email completo)
+- Tono: Profesional pero cercano y humano
+- NO uses emojis
+- NO uses palabras spam: "gratis", "oferta", "urgente", "increíble"
+- NO hagas afirmaciones que no puedes verificar sobre su negocio
+- NO menciones precio ni paquetes específicos
+- SÍ sé específico sobre lo que has visto en su web/negocio
+- SÍ enfócate en el valor que aportas, no en vender
+- El objetivo es iniciar una conversación, no cerrar una venta
+
+FORMATO DE RESPUESTA:
+ASUNTO: [Crea un asunto personalizado de máximo 6-8 palabras. Debe mencionar algo específico de su marca o ser intrigante. Ejemplos: "Ideas para crecer [Nombre Marca] en Instagram" o "Me encantó vuestra colección de verano"]
+
+CUERPO:
+Hola [Nombre del negocio o propietario si lo encuentras],
+
+[Tu email aquí siguiendo la estructura anterior]
+
+Un saludo,
+[Tu nombre]
+[Tu cargo]
+[Tu empresa]
+[Tu email]
+[Tu teléfono - opcional]
+
+---
+
+
+EJEMPLOS DE BUENOS ASUNTOS
+===========================
+
+✅ Buenos asuntos (específicos, personalizados):
+- "Ideas para crecer BeautyLab en Instagram"
+- "Me encantó tu colección sostenible"
+- "Propuesta para Zara Boutique"
+- "Ayudando marcas de moda en Madrid"
+- "Vi tu tienda en Malasaña"
+
+❌ Malos asuntos (genéricos, spam):
+- "Oferta especial de marketing"
+- "¡Aumenta tus ventas YA!"
+- "Servicios de marketing digital"
+- "GRATIS - Consultoría"
+- "Tu negocio necesita esto"
+
+
+EJEMPLO DE EMAIL COMPLETO
+==========================
+
+ASUNTO: Ideas para crecer Boho Chic en Instagram
+
+CUERPO:
+Hola equipo de Boho Chic,
+
+He descubierto vuestra marca buscando tiendas de ropa bohemia en Madrid y me ha gustado mucho vuestro estilo único y los tejidos naturales que usáis.
+
+Sé que para marcas independientes como la vuestra es todo un reto destacar frente a las grandes cadenas. Nosotros nos especializamos precisamente en eso: ayudar a pequeñas marcas de moda a construir una comunidad leal en Instagram y TikTok.
+
+Hace poco ayudamos a una marca similar a aumentar su engagement un 240% en 3 meses con contenido orgánico bien planificado y colaboraciones con microinfluencers del sector sostenible.
+
+Si os interesa, puedo preparar 3-4 ideas específicas sobre cómo podríais potenciar vuestra presencia online, sin compromiso.
+
+¿Os viene bien que hablemos 15 minutos esta semana?
+
+Un saludo,
+María González
+Marketing Digital
+Studio Digital
+maria@studiodigital.com
+654 123 456
+
+
+CHECKLIST ANTES DE USAR
+========================
+
+Antes de activar el workflow, asegúrate de:
+
+- [ ] Has reemplazado [TU NOMBRE/EMPRESA] con tu info real
+- [ ] Has añadido tus servicios específicos
+- [ ] Has incluido tu experiencia y casos de éxito
+- [ ] Has ajustado el tono al que usas normalmente
+- [ ] Has probado el email con 2-3 negocios reales primero
+- [ ] El asunto que genera es específico, no genérico
+- [ ] Has verificado que tu firma incluye todos tus datos de contacto
+- [ ] Has leído el email completo y suena natural (no robótico)
+
+
+TIPS PARA MEJORAR RESPUESTAS
+=============================
+
+1. PRUEBA Y AJUSTA:
+   - Genera 5-10 emails de prueba
+   - Lee cada uno críticamente
+   - Ajusta el prompt si son muy genéricos o muy largos
+
+2. VARÍA LA TEMPERATURA:
+   - Temperatura 0.7 = Más consistente, formal
+   - Temperatura 0.9 = Más creativo, variado
+   - Empieza con 0.8 (recomendado)
+
+3. AÑADE RESTRICCIONES:
+   - Si es muy largo: "Máximo 150 palabras"
+   - Si es muy genérico: "Menciona SIEMPRE algo específico de {{ $json.contenido_web }}"
+   - Si es muy vendedor: "Enfoque consultivo, no de venta"
+
+4. USA EJEMPLOS:
+   - Añade 2-3 ejemplos de emails que te gustan al prompt
+   - ChatGPT aprenderá tu estilo
+
+5. ITERA:
+   - Versión 1: Prueba básica
+   - Versión 2: Ajusta según resultados
+   - Versión 3: Optimiza para tu audiencia específica

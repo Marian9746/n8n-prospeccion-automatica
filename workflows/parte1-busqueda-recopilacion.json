@@ -1,0 +1,320 @@
+{
+  "name": "Parte 1: Recopilación de Datos de Instagram",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "start-manual",
+      "name": "Inicio Manual",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_SPREADSHEET_ID_AQUI",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Instagram Input",
+          "mode": "name"
+        },
+        "options": {
+          "range": "A2:B1000"
+        }
+      },
+      "id": "leer-usernames",
+      "name": "Leer Usernames de Instagram",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [450, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CONFIGURAR_EN_N8N",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Lee los usernames de Instagram que agregaste manualmente"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filtrar solo los que no tienen estado 'Procesado'\nconst username = $input.item.json['Username'];\nconst estado = $input.item.json['Estado'] || '';\n\nif (estado.toLowerCase() === 'procesado') {\n  return [];\n}\n\nif (!username || username.trim() === '') {\n  return [];\n}\n\nreturn [{\n  json: {\n    username: username.trim().replace('@', '')\n  }\n}];"
+      },
+      "id": "filtrar-pendientes",
+      "name": "Filtrar Pendientes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300],
+      "notes": "Solo procesa los que no están marcados como 'Procesado'"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.instagram.com/{{ $json.username }}/?__a=1&__d=dis",
+        "options": {
+          "timeout": 15000,
+          "headers": {
+            "entries": [
+              {
+                "name": "User-Agent",
+                "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+              }
+            ]
+          },
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "obtener-perfil-ig",
+      "name": "Obtener Perfil de Instagram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 300],
+      "notes": "Intenta obtener datos del perfil público"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraer datos del perfil de Instagram\nconst username = $input.item.json.username || $('Filtrar Pendientes').item.json.username;\nlet userData = {};\n\ntry {\n  // Intentar parsear respuesta JSON si existe\n  const response = $input.item.json;\n  if (response.graphql && response.graphql.user) {\n    const user = response.graphql.user;\n    userData = {\n      nombre: user.full_name || username,\n      username: username,\n      bio: user.biography || '',\n      website: user.external_url || '',\n      email: '',\n      seguidores: user.edge_followed_by?.count || 0,\n      siguiendo: user.edge_follow?.count || 0,\n      posts: user.edge_owner_to_timeline_media?.count || 0,\n      es_negocio: user.is_business_account || false,\n      categoria: user.category_name || ''\n    };\n    \n    // Extraer email de la bio si existe\n    const emailRegex = /[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\\.[a-zA-Z0-9_-]+/;\n    const emailMatch = userData.bio.match(emailRegex);\n    if (emailMatch) {\n      userData.email = emailMatch[0];\n    }\n  } else {\n    // Si no hay datos estructurados, crear entrada básica\n    userData = {\n      nombre: username,\n      username: username,\n      bio: 'No disponible - perfil privado o error',\n      website: '',\n      email: '',\n      seguidores: 0,\n      siguiendo: 0,\n      posts: 0,\n      es_negocio: false,\n      categoria: ''\n    };\n  }\n} catch (error) {\n  // En caso de error, devolver datos básicos\n  userData = {\n    nombre: username,\n    username: username,\n    bio: 'Error al obtener datos',\n    website: '',\n    email: '',\n    seguidores: 0,\n    siguiendo: 0,\n    posts: 0,\n    es_negocio: false,\n    categoria: ''\n  };\n}\n\nreturn [{\n  json: {\n    ...userData,\n    url_instagram: `https://instagram.com/${username}`,\n    fecha_recopilacion: new Date().toISOString().split('T')[0]\n  }\n}];"
+      },
+      "id": "procesar-datos-ig",
+      "name": "Procesar Datos de Instagram",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.website }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "tiene-website",
+      "name": "¿Tiene Website?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.website }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "scrape-website",
+      "name": "Extraer Email del Website",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 200],
+      "notes": "Busca emails en el website si existe"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraer emails del HTML del website\nconst html = $input.item.json.body || $input.item.binary?.data?.toString() || '';\nconst emailRegex = /[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\\.[a-zA-Z0-9_-]+/gi;\nconst emails = html.match(emailRegex) || [];\n\n// Filtrar emails comunes que no son de contacto\nconst filteredEmails = [...new Set(emails)].filter(email => \n  !email.includes('example.com') && \n  !email.includes('domain.com') &&\n  !email.includes('sentry.io') &&\n  !email.includes('google.com') &&\n  !email.includes('wix.com')\n);\n\nconst previousData = $('Procesar Datos de Instagram').item.json;\n\n// Si encontramos email en el website y no tenía uno, actualizamos\nif (filteredEmails.length > 0 && !previousData.email) {\n  previousData.email = filteredEmails[0];\n}\n\nreturn [{\n  json: previousData\n}];"
+      },
+      "id": "extraer-email-web",
+      "name": "Extraer Email del HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1650, 200]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_SPREADSHEET_ID_AQUI",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Negocios Instagram",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre": "={{ $json.nombre }}",
+            "username": "={{ $json.username }}",
+            "url_instagram": "={{ $json.url_instagram }}",
+            "website": "={{ $json.website }}",
+            "email": "={{ $json.email }}",
+            "bio": "={{ $json.bio }}",
+            "seguidores": "={{ $json.seguidores }}",
+            "posts": "={{ $json.posts }}",
+            "es_negocio": "={{ $json.es_negocio }}",
+            "categoria": "={{ $json.categoria }}",
+            "fecha_recopilacion": "={{ $json.fecha_recopilacion }}",
+            "estado": "Pendiente Envío"
+          }
+        },
+        "options": {}
+      },
+      "id": "guardar-google-sheets",
+      "name": "Guardar en Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1850, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CONFIGURAR_EN_N8N",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Guarda los datos procesados en la hoja de resultados"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_SPREADSHEET_ID_AQUI",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Instagram Input",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Estado": "Procesado"
+          }
+        },
+        "options": {
+          "dataLocationOnSheets": "={{ 'A' + ($itemIndex + 2) }}:{{ 'B' + ($itemIndex + 2) }}"
+        }
+      },
+      "id": "marcar-procesado",
+      "name": "Marcar como Procesado",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [2050, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CONFIGURAR_EN_N8N",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Actualiza el estado en la hoja de input"
+    }
+  ],
+  "connections": {
+    "Inicio Manual": {
+      "main": [
+        [
+          {
+            "node": "Leer Usernames de Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Usernames de Instagram": {
+      "main": [
+        [
+          {
+            "node": "Filtrar Pendientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar Pendientes": {
+      "main": [
+        [
+          {
+            "node": "Obtener Perfil de Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Perfil de Instagram": {
+      "main": [
+        [
+          {
+            "node": "Procesar Datos de Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar Datos de Instagram": {
+      "main": [
+        [
+          {
+            "node": "¿Tiene Website?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Tiene Website?": {
+      "main": [
+        [
+          {
+            "node": "Extraer Email del Website",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Guardar en Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Email del Website": {
+      "main": [
+        [
+          {
+            "node": "Extraer Email del HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Email del HTML": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar en Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Marcar como Procesado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
