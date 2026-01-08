@@ -9,7 +9,7 @@ docker-compose up -d
 ```
 
 Accede a: http://localhost:5678
-- Usuario: `marian`
+- Usuario: `themode`
 - Password: `jnRdx3F4`
 
 ### 2. APIs Necesarias

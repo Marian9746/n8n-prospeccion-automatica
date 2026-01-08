@@ -67,7 +67,7 @@ http://localhost:5678
 ```
 
 4. Login inicial:
-   - Usuario: `marian`
+   - Usuario: `themode`
    - Contraseña: `jnRdx3F4`
    - **¡Cámbiala después por seguridad!**
 

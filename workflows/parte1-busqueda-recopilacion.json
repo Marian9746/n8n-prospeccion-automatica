@@ -1,87 +1,94 @@
 {
-  "name": "Parte 1: Recopilación de Datos de Instagram",
+  "name": "copiar",
   "nodes": [
     {
       "parameters": {},
-      "id": "start-manual",
+      "id": "2cbf3931-ca79-4c23-b167-76b2612f0671",
       "name": "Inicio Manual",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [250, 300]
+      "position": [
+        -1200,
+        112
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": false
     },
     {
       "parameters": {
-        "operation": "read",
         "documentId": {
           "__rl": true,
-          "value": "TU_SPREADSHEET_ID_AQUI",
-          "mode": "id"
+          "value": "https://docs.google.com/spreadsheets/d/1sk5YTVmibRXNv1wtkq5HbcC19JEy2zzNFlq-VvS9zJ8/edit?usp=drive_link",
+          "mode": "url"
         },
         "sheetName": {
           "__rl": true,
           "value": "Instagram Input",
           "mode": "name"
         },
-        "options": {
-          "range": "A2:B1000"
-        }
+        "options": {}
       },
-      "id": "leer-usernames",
+      "id": "e22d28bf-4ad7-4174-bdfc-864f288f9b3e",
       "name": "Leer Usernames de Instagram",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [450, 300],
+      "position": [
+        -1008,
+        112
+      ],
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "CONFIGURAR_EN_N8N",
+          "id": "OOzIvIESI9AR5GlQ",
           "name": "Google Sheets account"
         }
       },
+      "onError": "continueRegularOutput",
       "notes": "Lee los usernames de Instagram que agregaste manualmente"
     },
     {
       "parameters": {
         "jsCode": "// Filtrar solo los que no tienen estado 'Procesado'\nconst username = $input.item.json['Username'];\nconst estado = $input.item.json['Estado'] || '';\n\nif (estado.toLowerCase() === 'procesado') {\n  return [];\n}\n\nif (!username || username.trim() === '') {\n  return [];\n}\n\nreturn [{\n  json: {\n    username: username.trim().replace('@', '')\n  }\n}];"
       },
-      "id": "filtrar-pendientes",
+      "id": "f1a2a3bb-0bc0-4c99-abf2-ada855453880",
       "name": "Filtrar Pendientes",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [650, 300],
+      "position": [
+        -800,
+        112
+      ],
       "notes": "Solo procesa los que no están marcados como 'Procesado'"
     },
     {
       "parameters": {
         "url": "=https://www.instagram.com/{{ $json.username }}/?__a=1&__d=dis",
         "options": {
-          "timeout": 15000,
-          "headers": {
-            "entries": [
-              {
-                "name": "User-Agent",
-                "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-              }
-            ]
-          },
-          "allowUnauthorizedCerts": true
+          "allowUnauthorizedCerts": true,
+          "timeout": 15000
         }
       },
-      "id": "obtener-perfil-ig",
+      "id": "f988c8b1-6528-4fda-aacd-698600d76487",
       "name": "Obtener Perfil de Instagram",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 3,
-      "position": [850, 300],
+      "position": [
+        -608,
+        112
+      ],
       "notes": "Intenta obtener datos del perfil público"
     },
     {
       "parameters": {
         "jsCode": "// Extraer datos del perfil de Instagram\nconst username = $input.item.json.username || $('Filtrar Pendientes').item.json.username;\nlet userData = {};\n\ntry {\n  // Intentar parsear respuesta JSON si existe\n  const response = $input.item.json;\n  if (response.graphql && response.graphql.user) {\n    const user = response.graphql.user;\n    userData = {\n      nombre: user.full_name || username,\n      username: username,\n      bio: user.biography || '',\n      website: user.external_url || '',\n      email: '',\n      seguidores: user.edge_followed_by?.count || 0,\n      siguiendo: user.edge_follow?.count || 0,\n      posts: user.edge_owner_to_timeline_media?.count || 0,\n      es_negocio: user.is_business_account || false,\n      categoria: user.category_name || ''\n    };\n    \n    // Extraer email de la bio si existe\n    const emailRegex = /[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\\.[a-zA-Z0-9_-]+/;\n    const emailMatch = userData.bio.match(emailRegex);\n    if (emailMatch) {\n      userData.email = emailMatch[0];\n    }\n  } else {\n    // Si no hay datos estructurados, crear entrada básica\n    userData = {\n      nombre: username,\n      username: username,\n      bio: 'No disponible - perfil privado o error',\n      website: '',\n      email: '',\n      seguidores: 0,\n      siguiendo: 0,\n      posts: 0,\n      es_negocio: false,\n      categoria: ''\n    };\n  }\n} catch (error) {\n  // En caso de error, devolver datos básicos\n  userData = {\n    nombre: username,\n    username: username,\n    bio: 'Error al obtener datos',\n    website: '',\n    email: '',\n    seguidores: 0,\n    siguiendo: 0,\n    posts: 0,\n    es_negocio: false,\n    categoria: ''\n  };\n}\n\nreturn [{\n  json: {\n    ...userData,\n    url_instagram: `https://instagram.com/${username}`,\n    fecha_recopilacion: new Date().toISOString().split('T')[0]\n  }\n}];"
       },
-      "id": "procesar-datos-ig",
+      "id": "aabc8334-7d0d-4f9d-92d4-d237c65e2ad8",
       "name": "Procesar Datos de Instagram",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1050, 300]
+      "position": [
+        -400,
+        112
+      ]
     },
     {
       "parameters": {
@@ -94,11 +101,14 @@
           ]
         }
       },
-      "id": "tiene-website",
+      "id": "eafebc3c-c41f-4b5f-8e24-e5e856a9c5af",
       "name": "¿Tiene Website?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [1250, 300]
+      "position": [
+        -208,
+        112
+      ]
     },
     {
       "parameters": {
@@ -107,30 +117,36 @@
           "timeout": 10000
         }
       },
-      "id": "scrape-website",
+      "id": "8cc08d1e-62e8-4f0e-ba2f-bdfc88a1b14e",
       "name": "Extraer Email del Website",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 3,
-      "position": [1450, 200],
+      "position": [
+        0,
+        0
+      ],
       "notes": "Busca emails en el website si existe"
     },
     {
       "parameters": {
         "jsCode": "// Extraer emails del HTML del website\nconst html = $input.item.json.body || $input.item.binary?.data?.toString() || '';\nconst emailRegex = /[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\\.[a-zA-Z0-9_-]+/gi;\nconst emails = html.match(emailRegex) || [];\n\n// Filtrar emails comunes que no son de contacto\nconst filteredEmails = [...new Set(emails)].filter(email => \n  !email.includes('example.com') && \n  !email.includes('domain.com') &&\n  !email.includes('sentry.io') &&\n  !email.includes('google.com') &&\n  !email.includes('wix.com')\n);\n\nconst previousData = $('Procesar Datos de Instagram').item.json;\n\n// Si encontramos email en el website y no tenía uno, actualizamos\nif (filteredEmails.length > 0 && !previousData.email) {\n  previousData.email = filteredEmails[0];\n}\n\nreturn [{\n  json: previousData\n}];"
       },
-      "id": "extraer-email-web",
+      "id": "df6592e8-929b-4788-843b-cc3292fe274c",
       "name": "Extraer Email del HTML",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1650, 200]
+      "position": [
+        208,
+        0
+      ]
     },
     {
       "parameters": {
         "operation": "append",
         "documentId": {
           "__rl": true,
-          "value": "TU_SPREADSHEET_ID_AQUI",
-          "mode": "id"
+          "value": "https://docs.google.com/spreadsheets/d/1sk5YTVmibRXNv1wtkq5HbcC19JEy2zzNFlq-VvS9zJ8/edit?usp=drive_link",
+          "mode": "url"
         },
         "sheetName": {
           "__rl": true,
@@ -147,23 +163,129 @@
             "email": "={{ $json.email }}",
             "bio": "={{ $json.bio }}",
             "seguidores": "={{ $json.seguidores }}",
-            "posts": "={{ $json.posts }}",
             "es_negocio": "={{ $json.es_negocio }}",
             "categoria": "={{ $json.categoria }}",
             "fecha_recopilacion": "={{ $json.fecha_recopilacion }}",
             "estado": "Pendiente Envío"
-          }
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url_instagram",
+              "displayName": "url_instagram",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "bio",
+              "displayName": "bio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "seguidores",
+              "displayName": "seguidores",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "es_negocio",
+              "displayName": "es_negocio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria",
+              "displayName": "categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_recopilacion",
+              "displayName": "fecha_recopilacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
         "options": {}
       },
-      "id": "guardar-google-sheets",
+      "id": "ddc5f520-b2e9-4c09-949c-c569bdc641fb",
       "name": "Guardar en Google Sheets",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [1850, 300],
+      "position": [
+        400,
+        112
+      ],
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "CONFIGURAR_EN_N8N",
+          "id": "OOzIvIESI9AR5GlQ",
           "name": "Google Sheets account"
         }
       },
@@ -174,8 +296,8 @@
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "value": "TU_SPREADSHEET_ID_AQUI",
-          "mode": "id"
+          "value": "https://docs.google.com/spreadsheets/d/1sk5YTVmibRXNv1wtkq5HbcC19JEy2zzNFlq-VvS9zJ8/edit?usp=drive_link",
+          "mode": "url"
         },
         "sheetName": {
           "__rl": true,
@@ -185,27 +307,68 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "Estado": "Procesado"
-          }
+            "row_number": 0,
+            "Username": "="
+          },
+          "matchingColumns": [
+            "Username"
+          ],
+          "schema": [
+            {
+              "id": "Username",
+              "displayName": "Username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
-        "options": {
-          "dataLocationOnSheets": "={{ 'A' + ($itemIndex + 2) }}:{{ 'B' + ($itemIndex + 2) }}"
-        }
+        "options": {}
       },
-      "id": "marcar-procesado",
+      "id": "0eaf29c2-76db-4b15-a499-2675e92f064e",
       "name": "Marcar como Procesado",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [2050, 300],
+      "position": [
+        672,
+        112
+      ],
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "CONFIGURAR_EN_N8N",
+          "id": "OOzIvIESI9AR5GlQ",
           "name": "Google Sheets account"
         }
       },
       "notes": "Actualiza el estado en la hoja de input"
     }
   ],
+  "pinData": {},
   "connections": {
     "Inicio Manual": {
       "main": [
@@ -304,17 +467,20 @@
     },
     "Guardar en Google Sheets": {
       "main": [
-        [
-          {
-            "node": "Marcar como Procesado",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     }
   },
+  "active": false,
   "settings": {
-    "executionOrder": "v1"
-  }
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "040984e5-2ed2-4286-b01d-17383840f4e9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d1b919c8bc80e6e58cc69d01d2f46e38c8e989f529e60348fe396fa2ea20bc7c"
+  },
+  "id": "1Yh1S-qEcfngHauq9DjgY",
+  "tags": []
 }
